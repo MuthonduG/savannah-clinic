@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 from phonenumber_field.phonenumber import PhoneNumber
-
+from typing import Optional, List, Dict, Any
 from apps.doctor.models import Doctor, Specialization
 from apps.clinic.models import Clinic
 
@@ -156,14 +156,35 @@ class DoctorService:
     # ============ RETRIEVE ============
     
     @staticmethod
-    def get_doctor_by_id(doctor_id: int) -> Doctor:
-        """Get doctor by ID with optimized query."""
-        return Doctor.objects.select_related(
-            "user",
-            "clinic",
-            "specialization"
-        ).get(id=doctor_id)
-    
+    def get_doctor_by_id(doctor_id: int, prefetch_related: bool = False) -> Optional[Doctor]:
+        """
+        Get doctor by ID with optional prefetching.
+        
+        Args:
+            doctor_id: Doctor ID
+            prefetch_related: Whether to prefetch related fields
+            
+        Returns:
+            Doctor instance or None if not found
+        """
+        try:
+            queryset = Doctor.objects.select_related(
+                "user",
+                "clinic",
+                "specialization"
+            )
+            
+            if prefetch_related:
+                queryset = queryset.prefetch_related(
+                    'user__groups',
+                    'user__user_permissions'
+                )
+            
+            return queryset.get(id=doctor_id)
+        except Doctor.DoesNotExist:
+            return None
+
+        
     @staticmethod
     def get_doctor_by_email(email: str) -> Doctor:
         """Get doctor by email with optimized query."""

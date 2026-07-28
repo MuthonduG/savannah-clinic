@@ -43,25 +43,9 @@ class Doctor(models.Model):
     """
     
     # Link to Django's User model (authentication)
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name="doctor_profile",
-    )
-    
-    # Clinic relationship
-    clinic = models.ForeignKey(
-        Clinic,
-        on_delete=models.PROTECT,  # Prevent accidental deletion
-        related_name="doctors",
-    )
-    
-    # Doctor-specific information (only what's NOT in User)
-    gender = models.CharField(
-        max_length=10,
-        choices=Gender.choices,
-    )
-    
+    user = models.OneToOneField( User, on_delete=models.CASCADE, related_name="doctor_profile",  )    
+    clinic = models.ForeignKey( Clinic, on_delete=models.PROTECT, related_name="doctors",  )    
+    gender = models.CharField( max_length=10, choices=Gender.choices, )   
     date_of_birth = models.DateField(
         validators=[
             MinValueValidator(
@@ -70,49 +54,17 @@ class Doctor(models.Model):
             )
         ]
     )
-    
     phone_number = PhoneNumberField(region="KE")  # International phone number
-    
-    license_number = models.CharField(
-        max_length=100,
-        unique=True,
-        help_text="Medical board registration/license number",
-    )
-    
-    specialization = models.ForeignKey(
-        Specialization,
-        on_delete=models.PROTECT,
-        related_name="doctors",
-        help_text="Medical specialization",
-    )
-    
-    qualification = models.CharField(
-        max_length=150,
-        blank=True,
-        help_text="e.g. MBChB, MD, BDS",
-    )
-    
-    years_of_experience = models.PositiveIntegerField(default=0)
-    
-    employment_type = models.CharField(
-        max_length=20,
-        choices=EmploymentType.choices,
-        default=EmploymentType.FULL_TIME,
-    )
-    
-    bio = models.TextField(blank=True)
-    
-    profile_photo = models.ImageField(
-        upload_to="doctors/",
-        blank=True,
-        null=True,
-    )
-    
-    is_active = models.BooleanField(
-        default=True,
+    license_number = models.CharField( max_length=100, unique=True, help_text="Medical board registration/license number", )   
+    specialization = models.ForeignKey( Specialization, on_delete=models.PROTECT, related_name="doctors", help_text="Medical specialization", )    
+    qualification = models.CharField( max_length=150, blank=True, help_text="e.g. MBChB, MD, BDS", )
+    years_of_experience = models.PositiveIntegerField(default=0)    
+    employment_type = models.CharField( max_length=20, choices=EmploymentType.choices, default=EmploymentType.FULL_TIME, )    
+    bio = models.TextField(blank=True)    
+    profile_photo = models.ImageField( upload_to="doctors/",  blank=True, null=True, )   
+    is_active = models.BooleanField( default=True,
         help_text="Designates whether this doctor is currently practicing"
     )
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
