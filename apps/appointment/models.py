@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-
 from apps.doctor.models import Doctor
 from apps.patient.models import Patient
 
@@ -8,6 +7,9 @@ User = get_user_model()
 
 
 class Appointment(models.Model):
+    """
+    Appointment model with booking logic.
+    """
 
     class Status(models.TextChoices):
         BOOKED = "BOOKED", "Booked"
@@ -19,15 +21,17 @@ class Appointment(models.Model):
         Doctor,
         on_delete=models.PROTECT,
         related_name="appointments",
+        db_index=True,
     )
 
     patient = models.ForeignKey(
         Patient,
         on_delete=models.PROTECT,
         related_name="appointments",
+        db_index=True,
     )
 
-    appointment_date = models.DateField()
+    appointment_date = models.DateField(db_index=True)
 
     start_time = models.TimeField()
 
@@ -39,6 +43,7 @@ class Appointment(models.Model):
         max_length=20,
         choices=Status.choices,
         default=Status.BOOKED,
+        db_index=True,
     )
 
     cancellation_reason = models.TextField(
@@ -59,14 +64,13 @@ class Appointment(models.Model):
 
     class Meta:
         db_table = "appointments"
-
-        ordering = [
-            "appointment_date",
-            "start_time",
+        ordering = ["appointment_date", "start_time"]
+        indexes = [
+            models.Index(fields=['doctor', 'appointment_date', 'status']),
+            models.Index(fields=['patient', 'appointment_date']),
+            models.Index(fields=['appointment_date', 'status']),
         ]
-
         constraints = [
-
             models.UniqueConstraint(
                 fields=[
                     "doctor",
@@ -76,7 +80,6 @@ class Appointment(models.Model):
                 condition=models.Q(status="BOOKED"),
                 name="unique_active_doctor_slot",
             )
-
         ]
 
     def __str__(self):
