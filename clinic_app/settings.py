@@ -46,12 +46,14 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
 
     # Local apps
+    "apps.common",
     "apps.clinic",
     "apps.doctor",
     "apps.patient",
     "apps.workinghours",
     "apps.appointment",
     "apps.notification",
+    
 ]
 
 MIDDLEWARE = [
