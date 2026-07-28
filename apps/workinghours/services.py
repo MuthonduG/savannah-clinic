@@ -21,6 +21,43 @@ class WorkingHoursServiceError(Exception):
 class WorkingHoursService:
     """Service layer for Working Hours operations."""
 
+    @staticmethod
+    def _parse_time(time_value):
+        """
+        Parse time from string or return time object as-is.
+        
+        Args:
+            time_value: Can be time object, string, or None
+            
+        Returns:
+            time object or None
+        """
+        if time_value is None:
+            return None
+            
+        if isinstance(time_value, time):
+            return time_value
+            
+        if isinstance(time_value, str):
+            # Try different time formats
+            formats = [
+                '%H:%M:%S',      # 14:30:00
+                '%H:%M',         # 14:30
+                '%I:%M:%S %p',   # 02:30:00 PM
+                '%I:%M %p',      # 02:30 PM
+                '%H%M',          # 1430
+            ]
+            
+            for fmt in formats:
+                try:
+                    return datetime.strptime(time_value.strip(), fmt).time()
+                except ValueError:
+                    continue
+            
+            raise ValueError(f"Invalid time format: {time_value}. Use HH:MM or HH:MM:SS")
+            
+        raise ValueError(f"Invalid time type: {type(time_value)}. Expected time object or string.")
+
     # ============ CREATE ============
     
     @staticmethod
@@ -29,8 +66,8 @@ class WorkingHoursService:
         *,
         doctor: Doctor,
         day_of_week: str,
-        start_time: time,
-        end_time: time,
+        start_time,
+        end_time,
         slot_duration: int = 30,
         is_available: bool = True,
         created_by: Optional[User] = None,
@@ -38,24 +75,50 @@ class WorkingHoursService:
     ) -> WorkingHours:
         """
         Create a new working hours entry.
+        
+        Args:
+            doctor: Doctor instance
+            day_of_week: Day of week (MONDAY, TUESDAY, etc.)
+            start_time: Time object or string (HH:MM or HH:MM:SS)
+            end_time: Time object or string (HH:MM or HH:MM:SS)
+            slot_duration: Duration in minutes (default: 30)
+            is_available: Whether this slot is available (default: True)
+            created_by: User creating the entry
         """
         try:
+            # Parse times
+            start_time = WorkingHoursService._parse_time(start_time)
+            end_time = WorkingHoursService._parse_time(end_time)
+            
+            if start_time is None or end_time is None:
+                raise ValidationError({
+                    "start_time": "Start time is required.",
+                    "end_time": "End time is required."
+                })
+            
             # Validate time range
             if start_time >= end_time:
                 raise ValidationError({
-                    "end_time": "End time must be after start time."
+                    "end_time": f"End time ({end_time.strftime('%H:%M')}) must be after start time ({start_time.strftime('%H:%M')})."
                 })
             
             # Check for overlapping entries
-            if WorkingHours.objects.filter(
+            overlapping = WorkingHours.objects.filter(
                 doctor=doctor,
                 day_of_week=day_of_week,
                 is_available=True
             ).filter(
                 Q(start_time__lt=end_time) & Q(end_time__gt=start_time)
-            ).exists():
+            )
+            
+            if overlapping.exists():
+                overlap_details = []
+                for oh in overlapping[:3]:
+                    overlap_details.append(
+                        f"{oh.start_time.strftime('%H:%M')}-{oh.end_time.strftime('%H:%M')}"
+                    )
                 raise ValidationError({
-                    "start_time": "This time overlaps with existing working hours for this doctor."
+                    "start_time": f"This time overlaps with existing working hours: {', '.join(overlap_details)}."
                 })
             
             # Create working hours
@@ -77,6 +140,8 @@ class WorkingHoursService:
                     "day": day_of_week,
                     "start_time": start_time.strftime('%H:%M'),
                     "end_time": end_time.strftime('%H:%M'),
+                    "slot_duration": slot_duration,
+                    "is_available": is_available,
                     "created_by": created_by.id if created_by else None,
                 }
             )
@@ -157,9 +222,7 @@ class WorkingHoursService:
         day_of_week: Optional[str] = None,
         is_available: Optional[bool] = None,
     ) -> QuerySet[WorkingHours]:
-        """
-        Get working hours for a specific doctor.
-        """
+        """Get working hours for a specific doctor."""
         queryset = WorkingHours.objects.select_related('doctor__user').filter(doctor_id=doctor_id)
         
         if day_of_week:
@@ -176,9 +239,7 @@ class WorkingHoursService:
         day_of_week: str,
         date=None,
     ) -> List[Dict[str, Any]]:
-        """
-        Get available time slots for a doctor on a specific day.
-        """
+        """Get available time slots for a doctor on a specific day."""
         working_hours = WorkingHours.objects.filter(
             doctor_id=doctor_id,
             day_of_week=day_of_week,
@@ -214,8 +275,8 @@ class WorkingHoursService:
         doctor_id: Optional[int] = None,
         day_of_week: Optional[str] = None,
         is_available: Optional[bool] = None,
-        start_time_from: Optional[time] = None,
-        start_time_to: Optional[time] = None,
+        start_time_from=None,
+        start_time_to=None,
         ordering: str = "day_of_week,start_time",
     ) -> QuerySet[WorkingHours]:
         """
@@ -233,10 +294,14 @@ class WorkingHoursService:
             queryset = queryset.filter(is_available=is_available)
         
         if start_time_from:
-            queryset = queryset.filter(start_time__gte=start_time_from)
+            start_time = WorkingHoursService._parse_time(start_time_from)
+            if start_time:
+                queryset = queryset.filter(start_time__gte=start_time)
         
         if start_time_to:
-            queryset = queryset.filter(start_time__lte=start_time_to)
+            start_time = WorkingHoursService._parse_time(start_time_to)
+            if start_time:
+                queryset = queryset.filter(start_time__lte=start_time)
         
         # Apply ordering - handle multiple fields separated by comma
         if ordering:
@@ -263,13 +328,10 @@ class WorkingHoursService:
                     logger.warning(f"Ignoring invalid ordering field: {field}")
             
             if valid_order_fields:
-                # Use * to unpack the list
                 queryset = queryset.order_by(*valid_order_fields)
             else:
-                # Default ordering
                 queryset = queryset.order_by('day_of_week', 'start_time')
         else:
-            # Default ordering
             queryset = queryset.order_by('day_of_week', 'start_time')
         
         return queryset
@@ -282,8 +344,8 @@ class WorkingHoursService:
         working_hours: WorkingHours,
         *,
         day_of_week: Optional[str] = None,
-        start_time: Optional[time] = None,
-        end_time: Optional[time] = None,
+        start_time=None,
+        end_time=None,
         slot_duration: Optional[int] = None,
         is_available: Optional[bool] = None,
         updated_by: Optional[User] = None,
@@ -298,11 +360,11 @@ class WorkingHoursService:
             update_fields.append('day_of_week')
         
         if start_time is not None:
-            working_hours.start_time = start_time
+            working_hours.start_time = WorkingHoursService._parse_time(start_time)
             update_fields.append('start_time')
         
         if end_time is not None:
-            working_hours.end_time = end_time
+            working_hours.end_time = WorkingHoursService._parse_time(end_time)
             update_fields.append('end_time')
         
         if slot_duration is not None:
@@ -318,7 +380,7 @@ class WorkingHoursService:
                 # Validate
                 if working_hours.start_time >= working_hours.end_time:
                     raise ValidationError({
-                        "end_time": "End time must be after start time."
+                        "end_time": f"End time ({working_hours.end_time.strftime('%H:%M')}) must be after start time ({working_hours.start_time.strftime('%H:%M')})."
                     })
                 
                 # Check for overlaps (excluding self)
@@ -333,8 +395,13 @@ class WorkingHoursService:
                     )
                     
                     if overlapping.exists():
+                        overlap_details = []
+                        for oh in overlapping[:3]:
+                            overlap_details.append(
+                                f"{oh.start_time.strftime('%H:%M')}-{oh.end_time.strftime('%H:%M')}"
+                            )
                         raise ValidationError({
-                            "start_time": "This time overlaps with existing working hours."
+                            "start_time": f"This time overlaps with existing working hours: {', '.join(overlap_details)}."
                         })
                 
                 working_hours.full_clean()
@@ -345,6 +412,10 @@ class WorkingHoursService:
                     extra={
                         "working_hours_id": working_hours.id,
                         "doctor_id": working_hours.doctor.id,
+                        "doctor_name": working_hours.doctor.full_name,
+                        "day": working_hours.day_of_week,
+                        "start_time": working_hours.start_time.strftime('%H:%M'),
+                        "end_time": working_hours.end_time.strftime('%H:%M'),
                         "updated_by": updated_by.id if updated_by else None,
                         "updated_fields": update_fields,
                     }
@@ -366,9 +437,7 @@ class WorkingHoursService:
         working_hours: WorkingHours,
         deleted_by: Optional[User] = None,
     ) -> None:
-        """
-        Delete working hours entry.
-        """
+        """Delete working hours entry."""
         try:
             doctor = working_hours.doctor
             working_hours.delete()
@@ -378,6 +447,7 @@ class WorkingHoursService:
                 extra={
                     "working_hours_id": working_hours.id,
                     "doctor_id": doctor.id,
+                    "doctor_name": doctor.full_name,
                     "deleted_by": deleted_by.id if deleted_by else None,
                 }
             )
@@ -393,9 +463,7 @@ class WorkingHoursService:
         day_of_week: Optional[str] = None,
         deleted_by: Optional[User] = None,
     ) -> Dict[str, Any]:
-        """
-        Delete all working hours for a doctor, optionally filtered by day.
-        """
+        """Delete all working hours for a doctor, optionally filtered by day."""
         try:
             queryset = WorkingHours.objects.filter(doctor_id=doctor_id)
             
@@ -425,9 +493,7 @@ class WorkingHoursService:
     
     @staticmethod
     def get_statistics(doctor_id: Optional[int] = None) -> Dict[str, Any]:
-        """
-        Get statistics for working hours.
-        """
+        """Get statistics for working hours."""
         queryset = WorkingHours.objects.select_related('doctor')
         
         if doctor_id:
