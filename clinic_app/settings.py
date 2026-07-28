@@ -44,6 +44,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt.token_blacklist",
+    "drf_spectacular",
+    "drf_yasg",
+    "django_filters",
 
     # Local apps
     "apps.common",
@@ -171,21 +174,42 @@ CORS_ALLOW_CREDENTIALS = True
 # Django REST Framework Configuration
 # https://www.django-rest-framework.org/
 
+
 REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-        "rest_framework.renderers.BrowsableAPIRenderer",
-    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 20,
 }
+
+# SPECTACULAR_SETTINGS = {
+#     'TITLE': 'Clinic Management API',
+#     'DESCRIPTION': 'API for managing clinics, doctors, patients, appointments, and working hours',
+#     'VERSION': '1.0.0',
+#     'SERVE_INCLUDE_SCHEMA': False,
+#     'COMPONENT_SPLIT_REQUEST': True,
+#     'SWAGGER_UI_SETTINGS': {
+#         'deepLinking': True,
+#         'persistAuthorization': True,
+#         'displayOperationId': True,
+#     },
+#     'TAGS': [
+#         {'name': 'Authentication', 'description': 'JWT Authentication endpoints'},
+#         {'name': 'Clinics', 'description': 'Clinic management operations'},
+#         {'name': 'Doctors', 'description': 'Doctor management operations'},
+#         {'name': 'Specializations', 'description': 'Medical specialization management'},
+#         {'name': 'Working Hours', 'description': 'Doctor working hours management'},
+#         {'name': 'Patients', 'description': 'Patient management operations'},
+#         {'name': 'Appointments', 'description': 'Appointment booking operations'},
+#     ],
+#     'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+# }
+
 
 
 # Redis Configuration (for future Channels/WebSocket support)
