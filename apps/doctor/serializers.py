@@ -548,3 +548,21 @@ class DoctorBulkTransferSerializer(serializers.Serializer):
                 f"Doctor(s) with IDs {list(missing_ids)} do not exist."
             )
         return value
+
+
+class DoctorActivationSerializer(serializers.Serializer):
+    """
+    Serializer for toggling doctor active status.
+    """
+    is_active = serializers.BooleanField(
+        required=True,
+        help_text="Set to true to activate, false to deactivate"
+    )
+    
+    def validate_is_active(self, value):
+        """
+        Validate the is_active field.
+        """
+        if not isinstance(value, bool):
+            raise serializers.ValidationError("Must be a boolean value.")
+        return value
