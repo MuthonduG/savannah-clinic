@@ -846,51 +846,9 @@ ports:
   - "8001:8000"  # Use port 8001 instead
 ```
 
-## 🚧 Future Enhancements
+### To access token
+- Use creds below as a superuser is created during initial docker image run
 
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Email Notifications | Planned | Send appointment confirmations and reminders |
-| SMS Notifications | Planned | SMS reminders for appointments |
-| Redis Caching | Planned | Cache frequently accessed data |
-| WebSocket Updates | Planned | Real-time availability updates |
-| Doctor Dashboard | Planned | Doctor-specific dashboard and analytics |
-| Queue Management | Planned | Manage patient queues |
-| Appointment Reminders | Planned | Automated reminders via email/SMS |
-| Audit Logging | Planned | Track all system changes |
-| Role-based Permissions | Planned | Fine-grained access control |
-| Multi-clinic Support | Planned | Support for multiple clinic branches |
-| Reporting & Analytics | Planned | Advanced analytics and reporting |
-| Payment Integration | Planned | Online payment for appointments |
-| Telemedicine | Planned | Video consultation integration |
-| Mobile App API | Planned | Optimized endpoints for mobile |
-
-
-## 📝 Quick Start Commands
-
-```bash
-# Start services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Run migrations
-docker-compose exec backend python manage.py migrate
-
-# Create superuser
-docker-compose exec backend python manage.py createsuperuser
-
-# Run tests
-docker-compose exec backend python manage.py test
-
-# Access shell
-docker-compose exec backend python manage.py shell
-
-# Stop services
-docker-compose down
-
-# Stop and remove volumes
-docker-compose down -v
-```
-
+***username***: admin
+***email***: admin@mail.com
+***password***: Admin@123
