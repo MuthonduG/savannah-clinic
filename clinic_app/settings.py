@@ -101,7 +101,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("DB_NAME", "clinic_db"),
         "USER": os.getenv("DB_USER", "clinic_user"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "clinic_password"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "PNbpUSjbPk9eFY8PB5cvknHnB4ZZR1ca"),
         "HOST": os.getenv("DB_HOST", "dpg-d9km9eijnfac739fenk0-a"),
         "PORT": os.getenv("DB_PORT", "5432"),
     }
