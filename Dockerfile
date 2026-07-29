@@ -6,6 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Ensure logs are sent straight to stdout/stderr
 ENV PYTHONUNBUFFERED=1
 
+# Set default port
+ENV PORT=8000
+
 WORKDIR /app
 
 # Install system dependencies
@@ -24,6 +27,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source
 COPY . .
 
+# Make build.sh executable
+RUN chmod +x build.sh
+
+# Expose port
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:${PORT:-8000}"]
+# Run the build script
+CMD ["/bin/bash", "build.sh"]
