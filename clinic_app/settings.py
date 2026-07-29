@@ -99,7 +99,7 @@ WSGI_APPLICATION = "clinic_app.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "clinic_db"),
+        "NAME": os.getenv("DB_NAME", "clinic_db_6z8r"),
         "USER": os.getenv("DB_USER", "clinic_user"),
         "PASSWORD": os.getenv("DB_PASSWORD", "PNbpUSjbPk9eFY8PB5cvknHnB4ZZR1ca"),
         "HOST": os.getenv("DB_HOST", "dpg-d9km9eijnfac739fenk0-a"),
