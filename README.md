@@ -6,6 +6,180 @@ The Clinic Appointment Booking System is a production-ready RESTful backend API 
 
 The system is containerized using Docker, deployed on Render with PostgreSQL, and features a fully documented API through Swagger/OpenAPI.
 
+---
+
+# Design Decisions and Assumptions
+
+The project brief intentionally left several implementation details open. The following design decisions were made and guided the implementation.
+
+## 1. Multi-Clinic Architecture
+
+**Decision:** The system supports multiple clinics rather than a single clinic.
+
+**Reasoning:** Although the assignment describes a clinic appointment system, the requirements do not explicitly restrict the application to one clinic. Supporting multiple clinics reflects the structure of many healthcare providers in Kenya that operate several branches.
+
+This decision also enables future features such as:
+- Locating nearby clinics
+- Transferring doctors between clinics
+- Supporting different working hours per clinic
+- Scaling the application without redesigning the database
+
+**Trade-off:** Increased complexity in data modeling and API design, but provides better scalability and real-world applicability.
+
+---
+
+## 2. Doctors Belong to One Clinic
+
+**Decision:** Each doctor is assigned to exactly one clinic.
+
+**Reasoning:** For the current scope, a doctor works from a single physical location. This simplifies appointment scheduling, availability calculation, reporting, and conflict detection.
+
+**Trade-off:** Support for doctors working across multiple clinics can be introduced later through a many-to-many relationship if needed.
+
+---
+
+## 3. Patients are Registered to a Clinic
+
+**Decision:** Patients are associated with the clinic where they are registered.
+
+**Reasoning:** Many healthcare systems maintain patient records at the clinic level. This simplifies patient management, appointment history, reporting, and future electronic medical records integration.
+
+**Trade-off:** Patients visiting multiple clinics would need separate records, but this aligns with common healthcare practices where each clinic maintains its own patient database.
+
+---
+
+## 4. Appointment Duration
+
+**Decision:** Appointments are 30 minutes by default.
+
+**Reasoning:** The assignment specifies 30-minute appointment slots as the standard. The implementation stores `slot_duration` in the WorkingHours model so different durations can be supported in future without redesigning the system.
+
+**Trade-off:** Fixed 30-minute slots may not suit all specialties, but the architecture allows for per-doctor customization.
+
+---
+
+## 5. Authentication Strategy
+
+**Decision:** JWT authentication using Django REST Framework Simple JWT.
+
+**Reasoning:** A stateless authentication mechanism is more suitable for REST APIs than session-based authentication. JWT is easy to integrate with future web and mobile applications and scales well without server-side session storage.
+
+**Trade-off:** JWT tokens cannot be easily invalidated before expiry, but refresh tokens mitigate this concern.
+
+---
+
+## 6. Preventing Double Bookings
+
+**Decision:** Double booking prevention is enforced at multiple layers:
+
+1. **Validation Layer:** Server-side validation before any database operations
+2. **Database Transaction:** Atomic operations ensure data consistency
+3. **Unique Constraint:** Database-level unique constraint on `(doctor, appointment_date, start_time)` for active appointments
+4. **Concurrency Control:** `select_for_update()` locks rows during booking to prevent race conditions
+5. **Idempotency:** Each booking request is idempotent
+
+**Reasoning:** Healthcare appointments are high-stakes; preventing double bookings is a critical business requirement that must be guaranteed even under concurrent load.
+
+**Trade-off:** More complex implementation, but provides production-grade reliability.
+
+---
+
+## 7. Soft Deletion vs. Hard Deletion
+
+**Decision:** Appointments are cancelled by changing their status rather than deleting records. Clinics and doctors are archived (soft-deleted) rather than permanently deleted.
+
+**Reasoning:** Maintaining history supports auditing, reporting, and future analytics while preserving data integrity. In healthcare, maintaining historical records is often a regulatory requirement.
+
+**Trade-off:** Slightly larger database size, but provides valuable historical data and prevents accidental data loss.
+
+---
+
+## 8. Dockerized Deployment
+
+**Decision:** The application is containerized using Docker.
+
+**Reasoning:** Docker provides a consistent execution environment across local development, testing, and production, reducing environment-specific issues and simplifying deployment.
+
+**Trade-off:** Additional complexity in setup, but significantly reduces "works on my machine" problems.
+
+---
+
+## 9. Deployment Platform
+
+**Decision:** The application is deployed on Render using PostgreSQL.
+
+**Reasoning:** Render provides managed PostgreSQL and container deployment, making it suitable for demonstrating a production-ready deployment without requiring manual server management. It's more accessible for evaluation purposes than AWS or GCP.
+
+**Trade-off:** Limited to Render's features, but sufficient for demonstrating deployment capabilities.
+
+---
+
+## 10. Notification Service
+
+**Decision:** The notification module exists as a placeholder and is not fully implemented.
+
+**Reasoning:** The current project focuses on the core booking workflow. The architecture has been designed so email, SMS, or WebSocket notifications can be added without major structural changes.
+
+**Trade-off:** Users don't receive automatic notifications yet, but the system is designed for easy extension.
+
+---
+
+## 11. API Design Pattern
+
+**Decision:** The project uses Django REST Framework ViewSets with routers.
+
+**Reasoning:** ViewSets reduce repetitive code, standardize CRUD operations, and make the API easier to maintain and extend. This provides a consistent API structure across all resources.
+
+**Trade-off:** Less granular control over individual endpoints, but significantly faster development and better maintainability.
+
+---
+
+## 12. Business Rule: 1-Hour Advance Booking
+
+**Decision:** Appointments must be booked at least 1 hour in advance.
+
+**Reasoning:** This prevents last-minute bookings that could disrupt clinic operations and gives staff adequate time to prepare. The requirement was not explicitly stated but was inferred from real-world clinic operations.
+
+**Trade-off:** Patients cannot make immediate emergency bookings, but this aligns with standard clinic scheduling practices.
+
+---
+
+## 13. Timezone Handling
+
+**Decision:** All times are stored in UTC and converted to the clinic's configured timezone for display.
+
+**Reasoning:** Standard best practice for handling time in distributed systems. This ensures consistency across different time zones and avoids daylight saving issues.
+
+**Trade-off:** Slightly more complex time handling, but ensures correctness across deployments.
+
+---
+
+## 14. Geolocation for Nearby Clinics
+
+**Decision:** Latitude and longitude are stored for clinics to enable proximity searches.
+
+**Reasoning:** This enhances user experience by allowing patients to find clinics near them. While not explicitly required, it provides additional value to the API.
+
+**Trade-off:** Additional data storage and complexity in queries.
+
+---
+
+## Future Assumptions
+
+The following assumptions were made and may be revisited in future versions:
+
+- Clinics may have multiple doctors.
+- A doctor can only attend one appointment at a given time.
+- A patient may have multiple appointments.
+- Working hours define all available appointment slots.
+- Appointment availability is calculated dynamically rather than storing slots in the database.
+- All appointment times use the clinic's configured timezone.
+- Authentication is required for modifying resources, while selected read operations remain public.
+- The system will eventually need to scale to support multiple branches.
+- Email and SMS notifications will be added in the future.
+
+---
+
 ## ✨ Features
 
 ### 🏥 Clinic Management
@@ -55,6 +229,8 @@ The system is containerized using Docker, deployed on Render with PostgreSQL, an
 - Auto-generated OpenAPI schema
 - Type hints and field descriptions
 
+---
+
 ## 🚀 Technology Stack
 
 | Component | Technology |
@@ -69,6 +245,8 @@ The system is containerized using Docker, deployed on Render with PostgreSQL, an
 | **Geospatial** | PostGIS (for future enhancements) |
 | **Future Queue** | Redis (planned) |
 | **Future Notifications** | Django Channels / WebSockets (planned) |
+
+---
 
 ## 📁 Project Structure
 
@@ -125,6 +303,8 @@ clinic_app/
 ├── manage.py
 └── README.md
 ```
+
+---
 
 ## 🏗️ Architecture
 
@@ -201,6 +381,8 @@ clinic_app/
 └─────────────────────────────────────────────────┘
 ```
 
+---
+
 ## 📊 Database Design
 
 ### Entity Relationship Diagram
@@ -233,6 +415,7 @@ clinic_app/
                       │ Patient │
                       └─────────┘
 ```
+
 
 ### Model Details
 
