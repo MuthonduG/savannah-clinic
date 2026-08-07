@@ -1,5 +1,4 @@
 services:
-
   web:
     build: .
     container_name: clinic_backend
@@ -20,36 +19,13 @@ services:
       - .env
 
     depends_on:
-      - postgres
       - redis
-
-  postgres:
-    image: postgres:16
-
-    container_name: clinic_postgres
-
-    restart: unless-stopped
-
-    environment:
-      POSTGRES_DB: clinic_db
-      POSTGRES_USER: clinic_user
-      POSTGRES_PASSWORD: clinic_password
-
-    ports:
-      - "5432:5432"
-
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
-
     container_name: clinic_redis
 
     restart: unless-stopped
 
     ports:
       - "6379:6379"
-
-volumes:
-  postgres_data:

@@ -96,14 +96,29 @@ WSGI_APPLICATION = "clinic_app.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": os.getenv("DB_NAME", "clinic_db_6z8r"),
+#         "USER": os.getenv("DB_USER", "clinic_user"),
+#         "PASSWORD": os.getenv("DB_PASSWORD", "PNbpUSjbPk9eFY8PB5cvknHnB4ZZR1ca"),
+#         "HOST": os.getenv("DB_HOST", "dpg-d9km9eijnfac739fenk0-a"),
+#         "PORT": os.getenv("DB_PORT", "5432"),
+#     }
+# }
+
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "clinic_db_6z8r"),
-        "USER": os.getenv("DB_USER", "clinic_user"),
+        "NAME": os.getenv("DB_NAME", "postgres"),
+        "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD", "PNbpUSjbPk9eFY8PB5cvknHnB4ZZR1ca"),
-        "HOST": os.getenv("DB_HOST", "dpg-d9km9eijnfac739fenk0-a"),
+        "HOST": os.getenv("DB_HOST", "db.frgmkvcqvdotzvljmqkq.supabase.co"),
         "PORT": os.getenv("DB_PORT", "5432"),
+        "OPTIONS": {
+            "sslmode": os.getenv("DB_SSLMODE", "require"),
+        },
     }
 }
 
